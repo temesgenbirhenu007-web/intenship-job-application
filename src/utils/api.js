@@ -1,9 +1,6 @@
 import axios from 'axios';
-import { mockUsers, mockJobs, mockApplications, mockRecruiters } from '../data/mockData';
 
 const API_BASE_URL = '/api';
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -20,160 +17,131 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    throw error.response?.data || error;
+  }
+);
+
 export const authAPI = {
   login: async (email, password) => {
-    await delay(800);
-    const user = mockUsers.find(u => u.email === email && u.password === password);
-    if (user) {
-      const { password: _, ...userWithoutPassword } = user;
-      return { ...userWithoutPassword, token: 'mock-jwt-token-' + user.id };
-    }
-    throw new Error('Invalid credentials');
+    const response = await api.post('/auth/login', { email, password });
+    return response;
   },
 
   register: async (userData) => {
-    await delay(1000);
-    const newUser = {
-      id: Date.now(),
-      ...userData,
-      token: 'mock-jwt-token-' + Date.now(),
-    };
-    return newUser;
+    const response = await api.post('/auth/register', userData);
+    return response;
+  },
+
+  logout: async () => {
+    const response = await api.post('/auth/logout');
+    return response;
   },
 };
 
 export const jobAPI = {
   getAllJobs: async (filters = {}) => {
-    await delay(600);
-    let jobs = [...mockJobs];
+    const params = new URLSearchParams();
+    if (filters.search) params.append('search', filters.search);
+    if (filters.location) params.append('location', filters.location);
+    if (filters.category) params.append('category', filters.category);
+    if (filters.type) params.append('type', filters.type);
 
-    if (filters.search) {
-      jobs = jobs.filter(job =>
-        job.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        job.company.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    if (filters.location) {
-      jobs = jobs.filter(job =>
-        job.location.toLowerCase().includes(filters.location.toLowerCase())
-      );
-    }
-
-    if (filters.category) {
-      jobs = jobs.filter(job => job.category === filters.category);
-    }
-
-    if (filters.type) {
-      jobs = jobs.filter(job => job.type === filters.type);
-    }
-
-    return jobs;
+    const response = await api.get(`/jobs?${params.toString()}`);
+    return response;
   },
 
   getJobById: async (id) => {
-    await delay(400);
-    return mockJobs.find(job => job.id === parseInt(id));
+    const response = await api.get(`/jobs/${id}`);
+    return response;
   },
 
   createJob: async (jobData) => {
-    await delay(800);
-    const newJob = {
-      id: Date.now(),
-      ...jobData,
-      postedDate: new Date().toISOString().split('T')[0],
-      status: 'active',
-      applicants: 0,
-    };
-    return newJob;
+    const response = await api.post('/jobs', jobData);
+    return response;
   },
 
   updateJob: async (id, jobData) => {
-    await delay(700);
-    return { id, ...jobData };
+    const response = await api.put(`/jobs/${id}`, jobData);
+    return response;
   },
 
   deleteJob: async (id) => {
-    await delay(500);
-    return { success: true };
+    const response = await api.delete(`/jobs/${id}`);
+    return response;
   },
 
-  getRecruiterJobs: async (recruiterId) => {
-    await delay(600);
-    return mockJobs.filter(job => job.postedBy === recruiterId);
+  getRecruiterJobs: async () => {
+    const response = await api.get('/jobs/recruiter/my-jobs');
+    return response;
   },
 };
 
 export const applicationAPI = {
   applyForJob: async (jobId, applicationData) => {
-    await delay(800);
-    const newApplication = {
-      id: Date.now(),
-      jobId,
-      ...applicationData,
-      appliedDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-    };
-    return newApplication;
+    const response = await api.post('/applications', { jobId, ...applicationData });
+    return response;
   },
 
-  getStudentApplications: async (studentId) => {
-    await delay(600);
-    const applications = mockApplications.filter(app => app.studentId === studentId);
-    return applications.map(app => ({
-      ...app,
-      job: mockJobs.find(job => job.id === app.jobId),
-    }));
+  getStudentApplications: async () => {
+    const response = await api.get('/applications/student/my-applications');
+    return response;
   },
 
   getJobApplicants: async (jobId) => {
-    await delay(600);
-    const applications = mockApplications.filter(app => app.jobId === jobId);
-    return applications.map(app => ({
-      ...app,
-      student: mockUsers.find(user => user.id === app.studentId),
-    }));
+    const response = await api.get(`/applications/job/${jobId}`);
+    return response;
   },
 
   updateApplicationStatus: async (applicationId, status) => {
-    await delay(500);
-    return { id: applicationId, status };
+    const response = await api.put(`/applications/${applicationId}/status`, { status });
+    return response;
   },
 };
 
 export const userAPI = {
-  updateProfile: async (userId, userData) => {
-    await delay(700);
-    return { id: userId, ...userData };
+  getProfile: async () => {
+    const response = await api.get('/users/profile');
+    return response;
+  },
+
+  updateProfile: async (userData) => {
+    const response = await api.put('/users/profile', userData);
+    return response;
   },
 
   getAllUsers: async () => {
-    await delay(600);
-    return [...mockUsers, ...mockRecruiters];
+    const response = await api.get('/users');
+    return response;
   },
 
   approveRecruiter: async (recruiterId) => {
-    await delay(500);
-    return { id: recruiterId, approved: true };
+    const response = await api.put(`/users/${recruiterId}/approve`);
+    return response;
   },
 
   blockUser: async (userId) => {
-    await delay(500);
-    return { id: userId, blocked: true };
+    const response = await api.put(`/users/${userId}/block`);
+    return response;
   },
 };
 
 export const statsAPI = {
   getAdminStats: async () => {
-    await delay(600);
-    return {
-      totalStudents: 150,
-      totalRecruiters: 45,
-      totalJobs: 230,
-      totalApplications: 1250,
-      pendingRecruiters: 8,
-      activeJobs: 180,
-    };
+    const response = await api.get('/stats/admin');
+    return response;
+  },
+
+  getRecruiterStats: async () => {
+    const response = await api.get('/stats/recruiter');
+    return response;
+  },
+
+  getStudentStats: async () => {
+    const response = await api.get('/stats/student');
+    return response;
   },
 };
 
