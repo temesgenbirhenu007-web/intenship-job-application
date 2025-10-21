@@ -32,6 +32,14 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Blocked users cannot log in or access protected routes
+userSchema.add({
+  blocked: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
