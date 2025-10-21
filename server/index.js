@@ -7,6 +7,7 @@ import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
+import seedAdminFromMock from './utils/seedAdminFromMock.js';
 
 dotenv.config();
 
@@ -39,6 +40,8 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  // Attempt to seed admin from frontend mock data (non-blocking)
+  await seedAdminFromMock();
 });

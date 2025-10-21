@@ -57,6 +57,9 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
+      if (user.blocked) {
+        return res.status(403).json({ message: 'Account is blocked. Contact support.' });
+      }
       let profile = null;
 
       if (user.role === 'student') {
